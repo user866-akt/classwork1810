@@ -1,4 +1,3 @@
-
 package servlet;
 
 import javax.servlet.ServletException;
@@ -18,7 +17,7 @@ import java.nio.file.Paths;
 @MultipartConfig(maxFileSize = 5*1024*1024, maxRequestSize = 10*1024*1024)
 public class FileUploadServlet extends HttpServlet {
 
-    public static final String FILE_PREFIX = "\tmp";
+    public static final String FILE_PREFIX = "tmp";
     public static final Integer DIR_COUNT = 100;
 
     @Override
@@ -26,14 +25,14 @@ public class FileUploadServlet extends HttpServlet {
         Part part = req.getPart("file");
         String filename = Paths.get(part.getSubmittedFileName()).getFileName().toString();
         File file = new File(FILE_PREFIX + File.separator + Math.abs(filename.hashCode() % DIR_COUNT) + File.separator + filename);
-        InputStream content = part.getInputStream();
-        if (file.getParentFile().mkdirs() &&
-                file.createNewFile()) {
-            FileOutputStream outputStream = new FileOutputStream(file);
-            byte[] buffer = new byte[content.available()];
-            content.read(buffer);
-            outputStream.write(buffer);
-            outputStream.close();
+        file.getParentFile().mkdirs();
+        try (InputStream content = part.getInputStream();
+             FileOutputStream outputStream = new FileOutputStream(file)) {
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+            while ((bytesRead = content.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, bytesRead);
+            }
         }
     }
 }
